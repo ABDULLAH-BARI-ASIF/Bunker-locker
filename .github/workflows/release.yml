@@ -24,8 +24,22 @@ jobs:
           echo 'androidStorePassword=${{ secrets.KEY_STORE_PASSWORD }}' >> local.properties
           echo 'androidKeyAlias=${{ secrets.ALIAS }}' >> local.properties
           echo 'androidKeyPassword=${{ secrets.KEY_PASSWORD }}' >> local.properties
-          echo 'androidStoreFile=sign_key.jks' >> local.properties
-          echo '${{ secrets.KEY_STORE }}' | base64 --decode > sign_key.jks
+          echo 'androidStoreFile=sign_key.p12' >> local.properties
+          echo '${{ secrets.KEY_STORE }}' | base64 --decode > temp_sign_key.jks
+          # Convert JKS to PKCS12 format to avoid compatibility issues
+          keytool -importkeystore \
+            -srckeystore temp_sign_key.jks \
+            -srcstoretype JKS \
+            -srcstorepass '${{ secrets.KEY_STORE_PASSWORD }}' \
+            -destkeystore sign_key.p12 \
+            -deststoretype PKCS12 \
+            -deststorepass '${{ secrets.KEY_STORE_PASSWORD }}' \
+            -srcalias '${{ secrets.ALIAS }}' \
+            -destalias '${{ secrets.ALIAS }}' \
+            -srckeypass '${{ secrets.KEY_PASSWORD }}' \
+            -destkeypass '${{ secrets.KEY_PASSWORD }}' \
+            -noprompt
+          rm temp_sign_key.jks
       - name: Build
         id: build
         run: |
